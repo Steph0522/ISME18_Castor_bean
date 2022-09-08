@@ -1,0 +1,69 @@
+---
+title: "Guilds_Arbus"
+author: "Stephanie Hereira Pacheco"
+date: sys.date()
+output: html_document
+---
+```{r, warning=FALSE, message=FALSE, width = 14, height = 9}
+#load libraries and files
+library(imager)
+library(cowplot)
+library(ggpubr)
+library(tidyverse)
+library(magrittr)
+library(ggpubr)
+library(readxl)
+library(viridis)
+arbus2<-load.image(file = "../Figures/arbus_raw.png")
+photo_panel <- ggdraw() + draw_image(arbus2, scale = 1)
+
+#grafica arbusculos
+
+
+dosmeses<- readxl::read_excel("../Data/MICOR ARBUS.xlsx", sheet = 2, range = "A1:O28")
+cuatromeses<- readxl::read_excel("../Data/MICOR ARBUS.xlsx", sheet = 3, range = "A1:O29")
+seismeses<- readxl::read_excel("../Data/MICOR ARBUS.xlsx", sheet = 4, range = "A1:O28")
+
+arbus<- bind_rows(list(m2 = dosmeses, m4 = cuatromeses, m6=seismeses), .id = "Tiempos")
+arbusc<- arbus %>% dplyr::select(L, P, "T", C, Tiempos, Porcentaje="%")
+
+#ggbloxplot de todas
+
+arbusc$Time <- factor(arbusc$Tiempos,
+                        levels = c("0", "m2", "m4", "m6"),
+                        labels = c("day0", "2 months", "4 months", "6 months"))
+arbusc$Treatment <- factor(arbusc$T,
+                             levels = c("1", "2", "3"),
+                             labels = c("Wet", "Dry", "Extreme dry"))
+
+
+pallete = c("#479330", "#FFFF00", "#FF0000")
+
+p<-arbusc %>% filter(Time == "2 months") %>%  ggboxplot(
+              ., x = "Treatment", y = "Porcentaje", #add = "mean_se",
+              palette = pallete, color= "black", fill = "Treatment",outlier.shape = NA,
+             # position = position_dodge(0.8) ,  
+             xlab = "Time",
+              ylab = "Percentage of \n mycorrizal colonization (%)")
+
+p1<-p + #stat_compare_means(aes(group= Treatment))+
+                               # ,label= paste0(..method..,"\n", "p=",..p.format..)))+ 
+  stat_compare_means(label.y = 130, show.legend = F )+ font("legend.title", size = 12)+
+  font("legend.text", size = 12)+theme(axis.title.x = element_blank(), 
+                                       axis.text.x = element_text(size = 16),
+                                       legend.position = "none",
+                                       axis.ticks = element_blank())+theme(legend.position = "none")+ guides(fill=guide_legend(title="Water regime"))
+
+
+p1
+
+```
+
+```{r, fig.height=10, fig.width=14}
+library(cowplot)
+a1<-plot_grid(photo_panel, p1, labels = c("a)", "b)"), label_size = 20)
+a1
+#ggsave('../../Figures_final//Fig5.tiff',
+#width = 14, height = 10, dpi = 300, plot = b1)
+```
+
